@@ -4,12 +4,15 @@ package cs2110;
  * An Expression that chains two commands together in a sequence
  */
 public class Sequence implements Expression<VarTable> {
-    // TODO 3.8: Implement fields
+    private final Expression<VarTable> leftCommand;
+    private final Expression<VarTable> rightCommand;
 
     /**
      * Creates a sequence of two commands, where `leftCommand` is executed before `rightCommand`
      */
     public Sequence(Expression<VarTable> leftCommand, Expression<VarTable> rightCommand) {
+        this.leftCommand = leftCommand;
+        this.rightCommand = rightCommand;
     }
 
     /**
@@ -17,8 +20,8 @@ public class Sequence implements Expression<VarTable> {
      */
     @Override
     public VarTable eval(VarTable varTable) throws UnassignedVariableException {
-        // TODO 3.8: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        VarTable updatedVarTable = leftCommand.eval(varTable);
+        return rightCommand.eval(updatedVarTable);
     }
 
     /**
@@ -33,8 +36,7 @@ public class Sequence implements Expression<VarTable> {
 
     @Override
     public String infixString() {
-        // TODO 3.8: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return leftCommand.infixString() + " ; " + rightCommand.infixString();
     }
 
 }
