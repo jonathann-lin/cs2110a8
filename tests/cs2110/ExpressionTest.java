@@ -14,7 +14,7 @@
          * when evaluated by itself
          */
         void testThrowUnassignedVariableException(Expression expr) {
-            assertThrows(UnassignedVariableException.class,  () -> expr.eval(VarTable.empty()));
+            assertThrows(UnassignedVariableException.class, () -> expr.eval(VarTable.empty()));
         }
 
         @Nested
@@ -299,108 +299,163 @@
                 assertSame(opt.getClass(), Sequence.class);
                 assertEquals("x := 1.0 ; y := 2.0", opt.infixString());
             }
+
+            @Test
+            @DisplayName("A Sequence where later Assignment depends on an earlier Assignment")
+            void testDependentAssignments() throws UnassignedVariableException {
+                Expression<VarTable> expr = new Sequence(
+                        new Assignment(new Variable("x"), new Constant<>(5.0)),
+                        new Assignment(new Variable("y"),
+                                new Operation(Operator.ADD, new Variable("x"), new Constant<>(3.0)))
+                );
+                VarTable vars = expr.eval(VarTable.empty());
+                assertEquals(2, vars.varSet().size());
+                assertEquals(5.0, vars.getValue("x"));
+                assertEquals(8.0, vars.getValue("y"));
+            }
+
+            @Test
+            @DisplayName("A Sequence simplifies correctly when variables can be simplified")
+            void testSimplifyDependentAssignments() {
+                Expression<VarTable> expr = new Sequence(
+                        new Assignment(new Variable("x"), new Constant<>(2.0)),
+                        new Assignment(new Variable("y"),
+                                new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(3.0)))
+                );
+                Expression<VarTable> simplified = expr.simplify(VarTable.empty());
+                assertSame(simplified.getClass(), Sequence.class);
+                assertEquals("x := 2.0 ; y := 6.0", simplified.infixString());
+            }
+
+            @Test
+            @DisplayName("A Sequence with an Unbound variable in later Assignment should throw exception")
+            void testUnboundLaterAssignment() {
+                Expression<VarTable> expr = new Sequence(
+                        new Assignment(new Variable("x"), new Constant<>(1.0)),
+                        new Assignment(new Variable("y"), new Variable("z"))
+                );
+                testThrowUnassignedVariableException(expr);
+            }
+
+            @Test
+            @DisplayName("A Sequence with nested Sequences evaluates correctly")
+            void testNestedSequences() throws UnassignedVariableException {
+                Expression<VarTable> expr = new Sequence(
+                        new Sequence(
+                                new Assignment(new Variable("a"), new Constant<>(1.0)),
+                                new Assignment(new Variable("b"), new Constant<>(2.0))
+                        ),
+                        new Assignment(new Variable("c"), new Operation(
+                                Operator.ADD, new Variable("a"), new Variable("b")))
+                );
+                VarTable vars = expr.eval(VarTable.empty());
+                assertEquals(3, vars.varSet().size());
+                assertEquals(1.0, vars.getValue("a"));
+                assertEquals(2.0, vars.getValue("b"));
+                assertEquals(3.0, vars.getValue("c"));
+            }
+
+            @Nested
+            class BooleanOperationTest {
+
+            }
+
+            @Nested
+            class ConditionalTest {
+
+                //        @Test
+                //        @DisplayName("A Conditional evaluates to a VarTable that stores the " +
+                //                "outcome of the if-statement")
+                //        void testEvaluateTrue() throws UnassignedVariableException {
+                //            Expression<VarTable> expr = new Conditional(
+                //                    new Constant<>(true),
+                //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            VarTable vars = expr.eval(VarTable.empty());
+                //            assertEquals(1, vars.varSet().size());
+                //            assertTrue(vars.contains("x"));
+                //            assertEquals(1.0, vars.getValue("x"));
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A Conditional node should throw an UnassignedVariableException when evaluated " +
+                //                "if a subexpression throws an UnassignedVariableException")
+                //        void testEvalUnbound() {
+                //            Expression<VarTable> expr = new Conditional(
+                //                    new Constant<>(true),
+                //                    new Assignment(new Variable("x"), new Variable("a")),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            testThrowUnassignedVariableException(expr);
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A Conditional node should produce the correct string representation")
+                //        void testInfix() {
+                //            Expression<VarTable> expr = new Conditional(
+                //                    new Constant<>(true),
+                //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            assertEquals("if true then {x := 1.0} else {y := 2.0}", expr.infixString());
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A Conditional node where subexpressions can be simplified will be " +
+                //                "simplified to a subexpression")
+                //        void testSimplify() {
+                //            Expression<VarTable> expr = new Conditional(
+                //                    new Constant<>(true),
+                //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            Expression<VarTable> opt = expr.simplify(VarTable.empty());
+                //            assertSame(opt.getClass(), Assignment.class);
+                //            assertEquals("x := 1.0", opt.infixString());
+                //        }
+            }
+
+            @Nested
+            class WhileTest {
+
+                //        @Test
+                //        @DisplayName("A While node evaluates to a VarTable that stores the " +
+                //                "outcome of the while-loop")
+                //        void testEvaluate() throws UnassignedVariableException {
+                //            // TODO 4.2
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A While node should throw an UnassignedVariableException when evaluated " +
+                //                "if a subexpression throws an UnassignedVariableException")
+                //        void testEvalUnbound() {
+                //            Expression<VarTable> expr = new While(
+                //                    new Constant<>(true),
+                //                    new Assignment(new Variable("x"), new Variable("a")),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            testThrowUnassignedVariableException(expr);
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A While node should produce the correct string representation")
+                //        void testInfix() {
+                //            Expression<VarTable> expr = new While(
+                //                    new Constant<>(false),
+                //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            assertEquals("while false do {x := 1.0} then {y := 2.0}", expr.infixString());
+                //        }
+                //
+                //        @Test
+                //        @DisplayName("A While node where subexpressions can be simplified will be " +
+                //                "simplified to a subexpression")
+                //        void testSimplify() {
+                //            Expression<VarTable> expr = new While(
+                //                    new Constant<>(false),
+                //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
+                //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
+                //            Expression<VarTable> opt = expr.simplify(VarTable.empty());
+                //            assertSame(opt.getClass(), Assignment.class);
+                //            assertEquals("y := 2.0", opt.infixString());
+                //        }
+            }
+
         }
-
-        @Nested
-        class BooleanOperationTest {
-
-        }
-
-        @Nested
-        class ConditionalTest {
-
-    //        @Test
-    //        @DisplayName("A Conditional evaluates to a VarTable that stores the " +
-    //                "outcome of the if-statement")
-    //        void testEvaluateTrue() throws UnassignedVariableException {
-    //            Expression<VarTable> expr = new Conditional(
-    //                    new Constant<>(true),
-    //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            VarTable vars = expr.eval(VarTable.empty());
-    //            assertEquals(1, vars.varSet().size());
-    //            assertTrue(vars.contains("x"));
-    //            assertEquals(1.0, vars.getValue("x"));
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A Conditional node should throw an UnassignedVariableException when evaluated " +
-    //                "if a subexpression throws an UnassignedVariableException")
-    //        void testEvalUnbound() {
-    //            Expression<VarTable> expr = new Conditional(
-    //                    new Constant<>(true),
-    //                    new Assignment(new Variable("x"), new Variable("a")),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            testThrowUnassignedVariableException(expr);
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A Conditional node should produce the correct string representation")
-    //        void testInfix() {
-    //            Expression<VarTable> expr = new Conditional(
-    //                    new Constant<>(true),
-    //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            assertEquals("if true then {x := 1.0} else {y := 2.0}", expr.infixString());
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A Conditional node where subexpressions can be simplified will be " +
-    //                "simplified to a subexpression")
-    //        void testSimplify() {
-    //            Expression<VarTable> expr = new Conditional(
-    //                    new Constant<>(true),
-    //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            Expression<VarTable> opt = expr.simplify(VarTable.empty());
-    //            assertSame(opt.getClass(), Assignment.class);
-    //            assertEquals("x := 1.0", opt.infixString());
-    //        }
-        }
-
-        @Nested
-        class WhileTest {
-
-    //        @Test
-    //        @DisplayName("A While node evaluates to a VarTable that stores the " +
-    //                "outcome of the while-loop")
-    //        void testEvaluate() throws UnassignedVariableException {
-    //            // TODO 4.2
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A While node should throw an UnassignedVariableException when evaluated " +
-    //                "if a subexpression throws an UnassignedVariableException")
-    //        void testEvalUnbound() {
-    //            Expression<VarTable> expr = new While(
-    //                    new Constant<>(true),
-    //                    new Assignment(new Variable("x"), new Variable("a")),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            testThrowUnassignedVariableException(expr);
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A While node should produce the correct string representation")
-    //        void testInfix() {
-    //            Expression<VarTable> expr = new While(
-    //                    new Constant<>(false),
-    //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            assertEquals("while false do {x := 1.0} then {y := 2.0}", expr.infixString());
-    //        }
-    //
-    //        @Test
-    //        @DisplayName("A While node where subexpressions can be simplified will be " +
-    //                "simplified to a subexpression")
-    //        void testSimplify() {
-    //            Expression<VarTable> expr = new While(
-    //                    new Constant<>(false),
-    //                    new Assignment(new Variable("x"), new Constant<>(1.0)),
-    //                    new Assignment(new Variable("y"), new Constant<>(2.0)));
-    //            Expression<VarTable> opt = expr.simplify(VarTable.empty());
-    //            assertSame(opt.getClass(), Assignment.class);
-    //            assertEquals("y := 2.0", opt.infixString());
-    //        }
-        }
-
     }
