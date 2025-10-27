@@ -142,8 +142,9 @@ public class Parser {
         switch (token.tokenType()) {
             case VAR -> {
                 if (!tokens.isEmpty() && tokens.remove().tokenType() == TokenType.ASSIGN) {
-                    // TODO 3.3: Implement this method according to its specifications.
-                    throw new UnsupportedOperationException();
+                    Variable var = new Variable((String)token.literal());
+                    Expression<Double> val = parseArithmeticExpr();
+                    return new Assignment(var, val);
                 } else {
                     throw new MalformedExpressionException("Assignment operator expected");
                 }
