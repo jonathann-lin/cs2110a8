@@ -27,7 +27,7 @@ public class Variable implements Expression<Double> {
      */
     @Override
     public Double eval(VarTable varTable) throws UnassignedVariableException {
-        if (varTable.contains(name)){
+        if (varTable.contains(name)) {
             return varTable.getValue(name);
         }
         throw new UnassignedVariableException();
@@ -40,8 +40,12 @@ public class Variable implements Expression<Double> {
      */
     @Override
     public Expression<Double> simplify(VarTable vars) {
-        // TODO 3.9: Implement this method according to its specifications.
-        return this;
+        if (vars.contains(name)) {
+            return new Constant<>(vars.getValue(name));
+        } else {
+            return this;
+        }
+
     }
 
     @Override

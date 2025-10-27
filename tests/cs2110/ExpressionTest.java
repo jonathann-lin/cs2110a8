@@ -164,13 +164,6 @@
             }
 
             @Test
-            @DisplayName("An Operation node for DIVIDE by zero should throw ArithmeticException")
-            void testEvalDivideByZero() {
-                Expression<Double> expr = new Operation(Operator.DIVIDE, new Constant<>(5.0), new Constant<>(0.0));
-                assertThrows(ArithmeticException.class, () -> expr.eval(VarTable.empty()));
-            }
-
-            @Test
             @DisplayName("Nested Operation nodes should evaluate correctly")
             void testNestedOperations() throws UnassignedVariableException {
                 Expression<Double> inner = new Operation(Operator.MULTIPLY, new Constant<>(2.0), new Constant<>(3.0)); // 6

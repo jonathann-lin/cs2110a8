@@ -35,8 +35,14 @@ public class Operation implements Expression<Double> {
      */
     @Override
     public Expression<Double> simplify(VarTable vars) {
-        // TODO 3.9: Implement this method according to its specifications.
-        return this;
+        Expression<Double> leftSimplify = leftExp.simplify(vars);
+        Expression<Double> rightSimplify = rightExp.simplify(vars);
+        if(leftSimplify instanceof Constant && rightSimplify instanceof  Constant){
+            double leftVal = ((Constant<Double>) leftSimplify).eval(vars);
+            double rightVal = ((Constant<Double>) rightSimplify).eval(vars);
+            return new Constant<>(op.operate(leftVal, rightVal));
+        }
+        else return new Operation(op, leftSimplify, rightSimplify);
     }
 
 

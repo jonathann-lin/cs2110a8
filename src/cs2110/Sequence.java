@@ -30,8 +30,14 @@ public class Sequence implements Expression<VarTable> {
      */
     @Override
     public Expression<VarTable> simplify(VarTable vars) {
-        // TODO 3.9: Implement this method according to its specifications.
-        return this;
+        Expression<VarTable> leftSimplified = leftCommand.simplify(vars);
+        VarTable updatedVars = vars;
+        try{
+            updatedVars = leftSimplified.eval(vars);
+        } catch (UnassignedVariableException e) {
+        }
+        Expression<VarTable> rightSimplified = rightCommand.simplify(updatedVars);
+        return new Sequence(leftSimplified, rightSimplified);
     }
 
     @Override

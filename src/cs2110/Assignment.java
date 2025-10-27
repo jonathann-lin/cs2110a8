@@ -32,8 +32,8 @@ public class Assignment implements Expression<VarTable> {
      */
     @Override
     public Expression<VarTable> simplify(VarTable vars) {
-        // TODO 3.9: Implement this method according to its specifications.
-        return this;
+        Expression<Double> simplifiedRight = aExpr.simplify(vars);
+        return new Assignment(var,simplifiedRight);
     }
 
     @Override
