@@ -135,6 +135,59 @@
                 Expression expr = new Operation(Operator.SUBTRACT, new Constant<>(1.5), new Variable("x"));
                 assertEquals("(1.5 - x)", expr.infixString());
             }
+
+            @Test
+            @DisplayName("An Operation node for SUBTRACT with two Constant operands should evaluate correctly")
+            void testEvalSubtract() throws UnassignedVariableException {
+                Expression<Double> expr = new Operation(Operator.SUBTRACT, new Constant<>(5.0), new Constant<>(3.0));
+                assertEquals(2.0, expr.eval(VarTable.empty()));
+
+                expr = new Operation(Operator.SUBTRACT, new Constant<>(3.0), new Constant<>(5.0));
+                assertEquals(-2.0, expr.eval(VarTable.empty()));
+            }
+
+            @Test
+            @DisplayName("An Operation node for MULTIPLY with a zero operand should evaluate to zero")
+            void testEvalMultiplyZero() throws UnassignedVariableException {
+                Expression<Double> expr = new Operation(Operator.MULTIPLY, new Constant<>(0.0), new Constant<>(5.0));
+                assertEquals(0.0, expr.eval(VarTable.empty()));
+
+                expr = new Operation(Operator.MULTIPLY, new Constant<>(5.0), new Constant<>(0.0));
+                assertEquals(0.0, expr.eval(VarTable.empty()));
+            }
+
+            @Test
+            @DisplayName("An Operation node for DIVIDE with non-zero numerator and denominator should evaluate correctly")
+            void testEvalDivide() throws UnassignedVariableException {
+                Expression<Double> expr = new Operation(Operator.DIVIDE, new Constant<>(10.0), new Constant<>(2.0));
+                assertEquals(5.0, expr.eval(VarTable.empty()));
+            }
+
+            @Test
+            @DisplayName("An Operation node for DIVIDE by zero should throw ArithmeticException")
+            void testEvalDivideByZero() {
+                Expression<Double> expr = new Operation(Operator.DIVIDE, new Constant<>(5.0), new Constant<>(0.0));
+                assertThrows(ArithmeticException.class, () -> expr.eval(VarTable.empty()));
+            }
+
+            @Test
+            @DisplayName("Nested Operation nodes should evaluate correctly")
+            void testNestedOperations() throws UnassignedVariableException {
+                Expression<Double> inner = new Operation(Operator.MULTIPLY, new Constant<>(2.0), new Constant<>(3.0)); // 6
+                Expression<Double> outer = new Operation(Operator.ADD, inner, new Constant<>(4.0)); // 6 + 4
+                assertEquals(10.0, outer.eval(VarTable.empty()));
+            }
+
+            @Test
+            @DisplayName("Operations with negative operands should evaluate correctly")
+            void testNegativeOperands() throws UnassignedVariableException {
+                Expression<Double> expr = new Operation(Operator.ADD, new Constant<>(-2.0), new Constant<>(3.0));
+                assertEquals(1.0, expr.eval(VarTable.empty()));
+
+                expr = new Operation(Operator.MULTIPLY, new Constant<>(-2.0), new Constant<>(-3.0));
+                assertEquals(6.0, expr.eval(VarTable.empty()));
+            }
+
         }
 
         @Nested
@@ -172,6 +225,31 @@
                 Expression<VarTable> opt = expr.simplify(VarTable.of("y", 1));
                 assertSame(opt.getClass(), Assignment.class);
                 assertEquals("x := 2.0", opt.infixString());
+            }
+
+            @Test
+            @DisplayName("Assigning to a variable that already exists overwrites its value")
+            void testOverwriteVariable() throws UnassignedVariableException {
+                VarTable vars = VarTable.of("x", 5.0);
+                assertTrue(vars.contains("x"));
+                assertEquals(5.0, vars.getValue("x"));
+                Expression<VarTable> expr = new Assignment(new Variable("x"), new Constant<>(10.0));
+                vars = expr.eval(vars);
+                assertTrue(vars.contains("x"));
+                assertEquals(10.0, vars.getValue("x")); // should overwrite old value
+            }
+
+            @Test
+            @DisplayName("Assignment with a complex arithmetic expression")
+            void testComplexExpression() throws UnassignedVariableException {
+                Expression<Double> rhs = new Operation(
+                        Operator.MULTIPLY,
+                        new Operation(Operator.ADD, new Variable("y"), new Constant<>(3.0)),
+                        new Constant<>(2.0)
+                );
+                Expression<VarTable> expr = new Assignment(new Variable("x"), rhs);
+                VarTable vars = expr.eval(VarTable.of("y", 4.0));
+                assertEquals(14.0, vars.getValue("x")); // (4 + 3) * 2 = 14
             }
         }
 

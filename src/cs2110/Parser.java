@@ -57,10 +57,19 @@ public class Parser {
      * T ::= U | U * T | U / T
      */
     Expression<Double> parseArithmeticTerm() throws MalformedExpressionException {
-        Expression<Double> expr = parseArithmeticUnit();
-        // TODO 3.7: Implement multiplication and division parsing.
+        if (tokens.isEmpty()) {
+            throw new MalformedExpressionException("Arithmetic term expected");
+        }
+        Expression<Double> left = parseArithmeticUnit();
 
-        return expr;
+        if(!tokens.isEmpty() &&  (tokens.peek().tokenType() == TokenType.MULTIPLY || tokens.peek().tokenType() == TokenType.DIVIDE)){
+            Token operationToken = tokens.remove();
+            Operator<Double> op = Operator.fromToken(operationToken.tokenType());
+            Expression<Double> right = parseArithmeticTerm();
+            return new Operation(op, left, right);
+        }
+
+        return left; //no * or /, just return unit
     }
 
     /**
@@ -69,10 +78,20 @@ public class Parser {
      * A ::= T | T + A | T - A
      */
     Expression<Double> parseArithmeticExpr() throws MalformedExpressionException {
-        Expression<Double> expr = parseArithmeticTerm();
-        // TODO 3.7: Implement addition and subtraction parsing.
+        if (tokens.isEmpty()) {
+            throw new MalformedExpressionException("Arithmetic expression expected");
+        }
+        Expression<Double> left = parseArithmeticTerm();
 
-        return expr;
+        if(!tokens.isEmpty() &&  (tokens.peek().tokenType() == TokenType.MINUS || tokens.peek().tokenType() == TokenType.PLUS)){
+            Token operationToken = tokens.remove();
+            Operator<Double> op = Operator.fromToken(operationToken.tokenType());
+            Expression<Double> right = parseArithmeticExpr();
+            return new Operation(op, left, right);
+        }
+
+        return left;
+
     }
 
     /**

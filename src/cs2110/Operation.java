@@ -4,12 +4,19 @@ package cs2110;
  * An operation performed on two arithmetic expressions
  */
 public class Operation implements Expression<Double> {
-    // TODO 3.6: implement fields
+
+    private final Operator<Double> op;
+    private final Expression<Double> leftExp;
+    private final Expression<Double> rightExp;
+
     /**
      * Create an Operation that performs an Operator `op` where `leftExp` is its left-hand argument
      * and `rightExp` is its right-hand
      */
     public Operation(Operator<Double> op, Expression<Double> leftExp, Expression<Double> rightExp) {
+        this.op = op;
+        this.leftExp = leftExp;
+        this.rightExp = rightExp;
     }
 
     /**
@@ -17,8 +24,7 @@ public class Operation implements Expression<Double> {
      */
     @Override
     public Double eval(VarTable vars) throws UnassignedVariableException {
-        // TODO 3.6: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return op.operate(leftExp.eval(vars), rightExp.eval(vars));
     }
 
 
@@ -42,8 +48,7 @@ public class Operation implements Expression<Double> {
      */
     @Override
     public String infixString() {
-        // TODO 3.6: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return "(" + leftExp.infixString() + " " + op.symbol() + " " + rightExp.infixString() + ")";
     }
 
 }
