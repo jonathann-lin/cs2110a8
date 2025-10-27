@@ -27,9 +27,8 @@ public class Parser {
         }
         Token token = tokens.remove();
         switch (token.tokenType()) {
-            // TODO 3.3: Return a Variable
             case VAR -> {
-                throw new UnsupportedOperationException();
+                return new Variable((String) token.literal());
             }
             case NUMBER -> {
                 return new Constant<>((Double) token.literal());

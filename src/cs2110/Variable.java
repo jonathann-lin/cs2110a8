@@ -4,20 +4,21 @@ package cs2110;
  * An expression representing a variable with a given name. Evaluates to a Double
  */
 public class Variable implements Expression<Double> {
-    // TODO 3.3: Implement fields
+
+    private final String name;
 
     /**
      * Creates a Variable expression given a name
      */
     public Variable(String var) {
+        name = var;
     }
 
     /**
      * Returns the given name of a Variable expression
      */
     public String getName() {
-        // TODO 3.3: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return name;
     }
 
     /**
@@ -26,8 +27,11 @@ public class Variable implements Expression<Double> {
      */
     @Override
     public Double eval(VarTable varTable) throws UnassignedVariableException {
-        // TODO 3.3: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        if (varTable.contains(name)){
+            return varTable.getValue(name);
+        }
+        throw new UnassignedVariableException();
+
     }
 
     /**
@@ -42,8 +46,7 @@ public class Variable implements Expression<Double> {
 
     @Override
     public String infixString() {
-        // TODO 3.3: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return name;
     }
 
 }
