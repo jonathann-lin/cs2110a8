@@ -4,12 +4,15 @@ package cs2110;
  * An expression representing an assignment operation, where a variable is updated to a new value
  */
 public class Assignment implements Expression<VarTable> {
-    // TODO 3.5: Implement fields
+    private final Variable var;
+    private final Expression<Double> aExpr;
 
     /**
      * Create an assignment between a variable and an arithmetic expression
      */
     public Assignment(Variable var, Expression<Double> aExpr) {
+        this.var = var;
+        this.aExpr = aExpr;
     }
 
     /**
@@ -18,8 +21,10 @@ public class Assignment implements Expression<VarTable> {
      */
     @Override
     public VarTable eval(VarTable varTable) throws UnassignedVariableException {
-        // TODO 3.5: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        Double val = aExpr.eval(varTable);
+        varTable.assign(var.getName(), val);
+        return varTable;
+
     }
 
     /**
@@ -33,8 +38,7 @@ public class Assignment implements Expression<VarTable> {
 
     @Override
     public String infixString() {
-        // TODO 3.5: Implement this method according to its specifications.
-        throw new UnsupportedOperationException();
+        return var.infixString() + " := " + aExpr.infixString();
     }
 
 }
