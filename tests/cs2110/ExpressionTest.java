@@ -310,14 +310,41 @@
             @Test
             @DisplayName("A Sequence simplifies correctly when variables can be simplified")
             void testSimplifyDependentAssignments() {
+                VarTable initial = VarTable.empty();
                 Expression<VarTable> expr = new Sequence(
                         new Assignment(new Variable("x"), new Constant<>(2.0)),
                         new Assignment(new Variable("y"),
                                 new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(3.0)))
                 );
-                Expression<VarTable> simplified = expr.simplify(VarTable.empty());
-                assertSame(simplified.getClass(), Sequence.class);
+                Expression<VarTable> simplified = expr.simplify(initial);
+                assertEquals(2.0, initial.getValue("x"));
+                assertSame(Sequence.class, simplified.getClass());
                 assertEquals("x := 2.0 ; y := 6.0", simplified.infixString());
+            }
+
+            @Test
+            @DisplayName("A Sequence simplifies correctly when variables can be simplified")
+            void testSimplifyDependentAssignments2() throws UnassignedVariableException {
+                VarTable initial = VarTable.empty();
+                Expression<VarTable> expr = new Sequence(
+                        new Assignment(new Variable("x"), new Constant<>(2.0)),
+                        new Assignment(new Variable("y"),
+                                new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(3.0)))
+                );
+
+                // Simplify expression — this should not modify 'initial'
+                Expression<VarTable> simplified = expr.simplify(initial);
+
+                // Check that simplification produced expected expression
+                assertEquals("x := 2.0 ; y := 6.0", simplified.infixString());
+                assertSame(Sequence.class, simplified.getClass());
+
+                // Evaluate to get the final variable table
+                VarTable result = simplified.eval(initial);
+
+                // Verify final values
+                assertEquals(2.0, result.getValue("x"));
+                assertEquals(6.0, result.getValue("y"));
             }
 
             @Test
