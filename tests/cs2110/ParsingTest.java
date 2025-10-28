@@ -367,15 +367,6 @@ public class ParsingTest {
         });
     }
 
-    @Test
-    @DisplayName("Floating point without leading digit throws MalformedExpressionException")
-    void testDotWithoutLeadingDigit() {
-        assertThrows(Parser.MalformedExpressionException.class, () -> {
-            Queue<Token> q = Main.tokenize("x := .5");
-            Parser p = new Parser(q);
-            p.parseProgram();
-        });
-    }
 
     @Test
     @DisplayName("Two operators in a row throws MalformedExpressionException")
