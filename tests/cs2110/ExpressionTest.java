@@ -375,6 +375,31 @@
                 assertEquals(3.0, vars.getValue("c"));
             }
 
+            @Test
+            @DisplayName("A Sequence with nested Sequences evaluates correctly")
+            void testMultipleSequencesVariableAssingment() throws UnassignedVariableException {
+                Expression<VarTable> expr = new Sequence(
+                        new Sequence(
+                                new Assignment(new Variable("x"), new Constant<>(1.0)),
+                                new Assignment(new Variable("y"),
+                                        new Operation(
+                                                Operator.ADD,
+                                                new Variable("x"),
+                                                new Constant<>(1.0)
+                                        )
+                                )
+                        ),
+                        new Assignment(new Variable("x"), new Constant<>(2.0))
+                );
+                // Evaluate the expression starting from an empty VarTable
+                VarTable vars = expr.eval(VarTable.empty());
+
+                // Assertions
+                assertEquals(2.0, vars.getValue("x")); // final x after reassignment
+                assertEquals(2.0, vars.getValue("y")); // y should remain 2.0
+            }
+
+
             @Nested
             class BooleanOperationTest {
 

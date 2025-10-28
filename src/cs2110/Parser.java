@@ -160,7 +160,8 @@ public class Parser {
 
         switch (token.tokenType()) {
             case VAR -> {
-                if (!tokens.isEmpty() && tokens.remove().tokenType() == TokenType.ASSIGN) {
+                if (!tokens.isEmpty() && tokens.peek().tokenType() == TokenType.ASSIGN) {
+                    tokens.remove();
                     Variable var = new Variable((String)token.literal());
                     Expression<Double> val = parseArithmeticExpr();
                     return new Assignment(var, val);
@@ -196,8 +197,11 @@ public class Parser {
      */
     Expression<VarTable> parseProgram() throws MalformedExpressionException {
         Expression<VarTable> command = parseCommand();
-        // TODO 3.8: Implement this method according to its specifications.
-
+        if (!tokens.isEmpty() && tokens.peek().tokenType() == TokenType.SEMICOLON){
+            tokens.remove();
+            Expression<VarTable> nextCommand = parseProgram();
+            return new Sequence(command, nextCommand);
+        }
         return command;
     }
 

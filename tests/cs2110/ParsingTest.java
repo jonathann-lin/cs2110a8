@@ -84,4 +84,71 @@ public class ParsingTest {
         assertEquals(1, expr.eval(VarTable.empty()));
     }
 
+    @Test
+    @DisplayName("Parsing a single assignment sequence")
+    void testSingleAssignmentSequence() throws IOException, MalformedExpressionException, UnassignedVariableException {
+        Queue<Token> q = Main.tokenize("x := 1");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertSame(Assignment.class, expr.getClass());
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(1.0, vars.getValue("x"));
+        assertEquals("x := 1.0", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Parsing a sequence of two assignments")
+    void testTwoAssignmentSequence() throws IOException, MalformedExpressionException, UnassignedVariableException {
+        Queue<Token> q = Main.tokenize("x := 1 ; y := 2");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertSame(Sequence.class, expr.getClass());
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(1.0, vars.getValue("x"));
+        assertEquals(2.0, vars.getValue("y"));
+        assertEquals("x := 1.0 ; y := 2.0", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Parsing a nested sequence")
+    void testNestedSequence() throws IOException, MalformedExpressionException, UnassignedVariableException {
+        Queue<Token> q = Main.tokenize("x := 1 ; (y := 2 ; z := 3)");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertSame(Sequence.class, expr.getClass());
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(1.0, vars.getValue("x"));
+        assertEquals(2.0, vars.getValue("y"));
+        assertEquals(3.0, vars.getValue("z"));
+        assertEquals("x := 1.0 ; y := 2.0 ; z := 3.0", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Sequence uses variables assigned in previous commands")
+    void testSequenceVariableDependency() throws IOException, MalformedExpressionException, UnassignedVariableException {
+        Queue<Token> q = Main.tokenize("x := 1 ; y := x + 1 ; x := 2");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertSame(Sequence.class, expr.getClass());
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(2.0, vars.getValue("x")); // final x
+        assertEquals(2.0, vars.getValue("y")); // y uses x's value at assignment time
+        assertEquals("x := 1.0 ; y := (x + 1.0) ; x := 2.0", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Nested sequences with dependent variables")
+    void testNestedSequenceWithDependencies() throws IOException, MalformedExpressionException, UnassignedVariableException {
+        Queue<Token> q = Main.tokenize("(a := 1 ; b := a + 1) ; c := b + 1");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertSame(Sequence.class, expr.getClass());
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(1.0, vars.getValue("a"));
+        assertEquals(2.0, vars.getValue("b"));
+        assertEquals(3.0, vars.getValue("c"));
+        assertEquals("a := 1.0 ; b := (a + 1.0) ; c := (b + 1.0)", expr.infixString());
+    }
+
+
 }
