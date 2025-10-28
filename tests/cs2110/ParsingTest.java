@@ -151,4 +151,271 @@ public class ParsingTest {
     }
 
 
+    @Test
+    @DisplayName("Parsing assignment with negative number")
+    void testNegativeNumberAssignment() throws Exception {
+        Queue<Token> q = Main.tokenize("x := -5");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(-5.0, vars.getValue("x"));
+        assertEquals("x := -5.0", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Parsing arithmetic expression with precedence")
+    void testArithmeticPrecedence() throws Exception {
+        Queue<Token> q = Main.tokenize("x := 1 + 2 * 3");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(7.0, vars.getValue("x")); // 1 + (2*3)
+        assertEquals("x := (1.0 + (2.0 * 3.0))", expr.infixString());
+    }
+
+
+    @Test
+    @DisplayName("Parsing assignment using unassigned variable throws")
+    void testUnassignedVariableThrows() throws Exception {
+        Queue<Token> q = Main.tokenize("x := y + 1");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        assertThrows(Expression.UnassignedVariableException.class, () -> expr.eval(VarTable.empty()));
+    }
+
+    @Test
+    @DisplayName("Parsing malformed missing assignment operator")
+    void testMalformedMissingAssign() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x 1");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Parsing malformed extra token at start")
+    void testMalformedExtraToken() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("1");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Parsing arithmetic with negative numbers and multiplication")
+    void testArithmeticEdgeCases() throws Exception {
+        Queue<Token> q = Main.tokenize("x := 0 - 1 * 3");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(-3.0, vars.getValue("x"));
+        assertEquals("x := (0.0 - (1.0 * 3.0))", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Parsing chained arithmetic expression")
+    void testChainedArithmetic() throws Exception {
+        Queue<Token> q = Main.tokenize("x := 1 + 2 - 3 * 4 / 2");
+        Parser p = new Parser(q);
+        Expression<VarTable> expr = p.parseProgram();
+        VarTable vars = expr.eval(VarTable.empty());
+        assertEquals(-3.0, vars.getValue("x")); // ((1+2) - ((3*4)/2))
+        assertEquals("x := (1.0 + (2.0 - (3.0 * (4.0 / 2.0))))", expr.infixString());
+    }
+
+    @Test
+    @DisplayName("Assignment with missing value throws MalformedExpressionException")
+    void testAssignmentMissingValue() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x :=");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Assignment with extra token after number throws MalformedExpressionException")
+    void testAssignmentExtraToken() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 2");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("If statement missing then throws MalformedExpressionException")
+    void testIfMissingThen() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("if true { x := 1 } else { x := 2 }");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("If statement missing else throws MalformedExpressionException")
+    void testIfMissingElse() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("if true then { x := 1 }");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+
+
+    @Test
+    @DisplayName("Unbalanced parentheses throws MalformedExpressionException")
+    void testUnbalancedParentheses() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("(x := 1 ; y := 2");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Empty program throws MalformedExpressionException")
+    void testEmptyProgram() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Invalid token at start throws MalformedExpressionException")
+    void testInvalidTokenStart() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize(";");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Multiple consecutive semicolons throws MalformedExpressionException")
+    void testConsecutiveSemicolons() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 ;; y := 2");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Negative number without following digit throws MalformedExpressionException")
+    void testMinusWithoutNumber() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := -");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Extra tokens after program throws MalformedExpressionException")
+    void testExtraTokensAfterProgram() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 1");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Assignment followed by unexpected variable throws MalformedExpressionException")
+    void testAssignmentFollowedByVar() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 y");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Number directly followed by parentheses throws MalformedExpressionException")
+    void testNumberFollowedByParen() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("1(x := 2)");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Extra colon in assignment throws MalformedExpressionException")
+    void testExtraColon() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x :: = 1");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Semicolon directly after open brace throws MalformedExpressionException")
+    void testSemicolonAfterBrace() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 ; { ; y := 2 }");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Floating point without leading digit throws MalformedExpressionException")
+    void testDotWithoutLeadingDigit() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := .5");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Two operators in a row throws MalformedExpressionException")
+    void testTwoOperatorsInARow() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 + * 2");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Boolean comparison missing operator throws MalformedExpressionException")
+    void testBooleanMissingOperator() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x 2");
+            Parser p = new Parser(q);
+            p.parseBooleanExpr();
+        });
+    }
+
+    @Test
+    @DisplayName("Multiple colons and semicolons in a row throws MalformedExpressionException")
+    void testMultipleColonsSemicolons() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("x := 1 ; ; : y := 2");
+            Parser p = new Parser(q);
+            p.parseProgram();
+        });
+    }
+
+    @Test
+    @DisplayName("Nested parentheses with no content throws MalformedExpressionException")
+    void testEmptyParentheses() {
+        assertThrows(Parser.MalformedExpressionException.class, () -> {
+            Queue<Token> q = Main.tokenize("()");
+            Parser p = new Parser(q);
+            p.parseArithmeticExpr();
+        });
+    }
+
+
 }
