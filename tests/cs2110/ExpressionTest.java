@@ -5,6 +5,9 @@
     import org.junit.jupiter.api.Test;
 
     import cs2110.Expression.UnassignedVariableException;
+
+    import javax.swing.plaf.SeparatorUI;
+
     import static org.junit.jupiter.api.Assertions.*;
 
     public class ExpressionTest {
@@ -397,6 +400,147 @@
                 // Assertions
                 assertEquals(2.0, vars.getValue("x")); // final x after reassignment
                 assertEquals(2.0, vars.getValue("y")); // y should remain 2.0
+            }
+            @Nested
+            class ArithmeticEdgeCasesTest {
+
+
+
+                @Test
+                @DisplayName("Operation with unassigned variable in nested expression throws UnassignedVariableException")
+                void testNestedUnassignedVariable() {
+                    Expression<Double> inner = new Operation(Operator.ADD, new Constant<>(1.0), new Variable("x"));
+                    Expression<Double> outer = new Operation(Operator.MULTIPLY, inner, new Constant<>(2.0));
+                    testThrowUnassignedVariableException(outer);
+                }
+
+                @Test
+                @DisplayName("Complex nested operations with constants evaluate correctly")
+                void testComplexNestedOperations() throws UnassignedVariableException {
+                    Expression<Double> expr = new Operation(
+                            Operator.MULTIPLY,
+                            new Operation(Operator.ADD, new Constant<>(1.0), new Constant<>(2.0)), // 3
+                            new Operation(Operator.SUBTRACT, new Constant<>(10.0), new Constant<>(4.0)) // 6
+                    );
+                    assertEquals(18.0, expr.eval(VarTable.empty())); // 3 * 6
+                }
+
+                @Test
+                @DisplayName("Operation simplifies correctly when all variables are mapped")
+                void testSimplifyNestedOperations() {
+                    Expression<Double> expr = new Operation(
+                            Operator.ADD,
+                            new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(2.0)),
+                            new Variable("y")
+                    );
+
+                    // Build VarTable incrementally since VarTable.of only takes one mapping
+                    VarTable vars = (VarTable.of("x", 3.0));
+                    vars.assign("y", 4.0);
+
+                    Expression<Double> simplified = expr.simplify(vars);
+                    assertSame(Constant.class, simplified.getClass());
+                    assertEquals("10.0", simplified.infixString());
+                }
+
+
+                @Test
+                @DisplayName("Operation simplifies partially when some variables are unassigned")
+                void testPartialSimplify() {
+                    Expression<Double> expr = new Operation(
+                            Operator.ADD,
+                            new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(2.0)),
+                            new Variable("y")
+                    );
+                    Expression<Double> simplified = expr.simplify(VarTable.of("x", 3.0));
+                    assertEquals("(6.0 + y)", simplified.infixString());
+                }
+            }
+
+            @Nested
+            class AssignmentEdgeCasesTest {
+
+                @Test
+                @DisplayName("Assignment with unassigned variable in complex expression throws UnassignedVariableException")
+                void testAssignmentWithUnassignedVariable() {
+                    Expression<VarTable> expr = new Assignment(
+                            new Variable("x"),
+                            new Operation(Operator.ADD, new Variable("y"), new Constant<>(1.0))
+                    );
+                    testThrowUnassignedVariableException(expr);
+                }
+
+                @Test
+                @DisplayName("Assignment overwrites variable multiple times correctly")
+                void testMultipleOverwrites() throws UnassignedVariableException {
+                    VarTable vars = VarTable.empty();
+                    Expression<VarTable> expr = new Sequence( new Sequence(
+                            new Assignment(new Variable("x"), new Constant<>(1.0)),
+                            new Assignment(new Variable("x"), new Constant<>(5.0))),
+                            new Assignment(new Variable("x"), new Constant<>(10.0))
+                    );
+                    vars = expr.eval(vars);
+                    assertEquals(10.0, vars.getValue("x"));
+                }
+
+                @Test
+                @DisplayName("Assignment simplifies deeply nested expression")
+                void testDeepSimplifyAssignment() {
+                    Expression<VarTable> expr = new Assignment(
+                            new Variable("x"),
+                            new Operation(
+                                    Operator.ADD,
+                                    new Operation(Operator.MULTIPLY, new Variable("y"), new Constant<>(2.0)),
+                                    new Constant<>(3.0)
+                            )
+                    );
+                    Expression<VarTable> simplified = expr.simplify(VarTable.of("y", 4.0));
+                    assertEquals("x := 11.0", simplified.infixString()); // 4*2 + 3
+                }
+            }
+
+            @Nested
+            class SequenceEdgeCasesTest {
+
+                @Test
+                @DisplayName("Sequence with nested unassigned variable throws UnassignedVariableException")
+                void testNestedSequenceUnassigned() {
+                    Expression<VarTable> expr = new Sequence(
+                            new Assignment(new Variable("x"), new Constant<>(1.0)),
+                            new Sequence(
+                                    new Assignment(new Variable("y"), new Variable("z")),
+                                    new Assignment(new Variable("w"), new Constant<>(5.0))
+                            )
+                    );
+                    testThrowUnassignedVariableException(expr);
+                }
+
+                @Test
+                @DisplayName("Sequence with multiple dependent assignments simplifies correctly")
+                void testSequenceSimplifyDependentAssignments() {
+                    Expression<VarTable> expr = new Sequence(new Sequence(
+                            new Assignment(new Variable("x"), new Constant<>(2.0)),
+                            new Assignment(new Variable("y"),
+                                    new Operation(Operator.MULTIPLY, new Variable("x"), new Constant<>(3.0)))),
+                            new Assignment(new Variable("z"),
+                                    new Operation(Operator.ADD, new Variable("y"), new Constant<>(1.0)))
+                    );
+                    Expression<VarTable> simplified = expr.simplify(VarTable.empty());
+                    assertEquals("x := 2.0 ; y := 6.0 ; z := 7.0", simplified.infixString());
+                }
+
+                @Test
+                @DisplayName("Sequence with reassignment and dependency evaluates correctly")
+                void testSequenceReassignmentDependency() throws UnassignedVariableException {
+                    Expression<VarTable> expr = new Sequence(new Sequence(
+                            new Assignment(new Variable("x"), new Constant<>(2.0)),
+                            new Assignment(new Variable("y"), new Constant<>(5.0))),
+                            new Assignment(new Variable("x"), new Operation(Operator.ADD, new Variable("x"), new Variable("y"))));
+                    ;
+                    VarTable result = expr.eval(VarTable.empty());
+                    assertEquals(7.0, result.getValue("x")); // 2 + 5
+                    assertEquals(5.0, result.getValue("y"));
+                }
             }
 
 

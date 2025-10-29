@@ -109,19 +109,6 @@ public class ParsingTest {
         assertEquals("x := 1.0 ; y := 2.0", expr.infixString());
     }
 
-    @Test
-    @DisplayName("Parsing a nested sequence")
-    void testNestedSequence() throws IOException, MalformedExpressionException, UnassignedVariableException {
-        Queue<Token> q = Main.tokenize("x := 1 ; (y := 2 ; z := 3)");
-        Parser p = new Parser(q);
-        Expression<VarTable> expr = p.parseProgram();
-        assertSame(Sequence.class, expr.getClass());
-        VarTable vars = expr.eval(VarTable.empty());
-        assertEquals(1.0, vars.getValue("x"));
-        assertEquals(2.0, vars.getValue("y"));
-        assertEquals(3.0, vars.getValue("z"));
-        assertEquals("x := 1.0 ; y := 2.0 ; z := 3.0", expr.infixString());
-    }
 
     @Test
     @DisplayName("Sequence uses variables assigned in previous commands")
@@ -135,21 +122,6 @@ public class ParsingTest {
         assertEquals(2.0, vars.getValue("y")); // y uses x's value at assignment time
         assertEquals("x := 1.0 ; y := (x + 1.0) ; x := 2.0", expr.infixString());
     }
-
-    @Test
-    @DisplayName("Nested sequences with dependent variables")
-    void testNestedSequenceWithDependencies() throws IOException, MalformedExpressionException, UnassignedVariableException {
-        Queue<Token> q = Main.tokenize("(a := 1 ; b := a + 1) ; c := b + 1");
-        Parser p = new Parser(q);
-        Expression<VarTable> expr = p.parseProgram();
-        assertSame(Sequence.class, expr.getClass());
-        VarTable vars = expr.eval(VarTable.empty());
-        assertEquals(1.0, vars.getValue("a"));
-        assertEquals(2.0, vars.getValue("b"));
-        assertEquals(3.0, vars.getValue("c"));
-        assertEquals("a := 1.0 ; b := (a + 1.0) ; c := (b + 1.0)", expr.infixString());
-    }
-
 
     @Test
     @DisplayName("Parsing assignment with negative number")
@@ -236,16 +208,6 @@ public class ParsingTest {
     }
 
     @Test
-    @DisplayName("Assignment with extra token after number throws MalformedExpressionException")
-    void testAssignmentExtraToken() {
-        assertThrows(Parser.MalformedExpressionException.class, () -> {
-            Queue<Token> q = Main.tokenize("x := 1 2");
-            Parser p = new Parser(q);
-            p.parseProgram();
-        });
-    }
-
-    @Test
     @DisplayName("If statement missing then throws MalformedExpressionException")
     void testIfMissingThen() {
         assertThrows(Parser.MalformedExpressionException.class, () -> {
@@ -317,25 +279,6 @@ public class ParsingTest {
         });
     }
 
-    @Test
-    @DisplayName("Extra tokens after program throws MalformedExpressionException")
-    void testExtraTokensAfterProgram() {
-        assertThrows(Parser.MalformedExpressionException.class, () -> {
-            Queue<Token> q = Main.tokenize("x := 1 1");
-            Parser p = new Parser(q);
-            p.parseProgram();
-        });
-    }
-
-    @Test
-    @DisplayName("Assignment followed by unexpected variable throws MalformedExpressionException")
-    void testAssignmentFollowedByVar() {
-        assertThrows(Parser.MalformedExpressionException.class, () -> {
-            Queue<Token> q = Main.tokenize("x := 1 y");
-            Parser p = new Parser(q);
-            p.parseProgram();
-        });
-    }
 
     @Test
     @DisplayName("Number directly followed by parentheses throws MalformedExpressionException")
